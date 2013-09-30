@@ -10,7 +10,7 @@ ro.ril.hsdpa.category=8
 ro.ril.fast.dormancy.rule=1
 ril.subscription.types=NV,RUIM
 ro.telephony.ril_class=HTCQualcommRIL
-ro.telephony.ril.v3=signalstrength,skipradiooff,singlepdp,skipbrokendatacall
+ro.telephony.ril.v3=datacallapn,signalstrength,skipradiooff,singlepdp
 ro.telephony.default_network = 0
 DEVICE_PROVISIONED=1
 
@@ -86,6 +86,16 @@ debug.sf.hw=1
 debug.hwc.dynThreshold=1.9
 debug.fb.rgb565=0
 
+# Video Acceleration
+video.accelerate.hw=1
+debug.performance.tuning=1
+
+# Low Power Audio
+lpa.decode=false
+audio.decoder_override_check=true
+use.non-omx.mp3.decoder=true
+use.non-omx.aac.decoder=true
+
 # Media
 ro.media.enc.jpeg.quality=100
 media.stagefright.enable-player=true
@@ -123,4 +133,4 @@ ro.android.secure=0
 # Goo.im
 ro.goo.developerid=joilaroi
 ro.goo.rom=CM102pico
-ro.goo.version=4
+ro.goo.version=6
