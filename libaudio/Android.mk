@@ -35,10 +35,14 @@ endif
 
 ifeq ($(strip $(BOARD_USES_SRS_TRUEMEDIA)),true)
 LOCAL_CFLAGS += -DSRS_PROCESSING
+$(shell mkdir -p $(OUT)/obj/SHARED_LIBRARIES/libsrsprocessing_intermediates/)
+$(shell touch $(OUT)/obj/SHARED_LIBRARIES/libsrsprocessing_intermediates/export_includes)
 endif
 
 LOCAL_CFLAGS += -DQCOM_VOIP_ENABLED
+ifeq ($(TARGET_QCOM_TUNNEL_LPA_ENABLED),true)
 LOCAL_CFLAGS += -DQCOM_TUNNEL_LPA_ENABLED
+endif
 
 LOCAL_SHARED_LIBRARIES := \
     libcutils       \

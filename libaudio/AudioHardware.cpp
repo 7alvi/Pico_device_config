@@ -31,7 +31,7 @@
 #include <cutils/properties.h> // for property_get
 
 // hardware specific functions
-
+#include <media/AudioSystem.h>
 #include "AudioHardware.h"
 #ifdef QCOM_FM_ENABLED
 extern "C" {
@@ -43,7 +43,6 @@ extern "C" {
 #ifdef WITH_QCOM_VOIP_OVER_MVS
 #include <linux/msm_audio_mvs.h>
 #endif
-
 
 #define COMBO_DEVICE_SUPPORTED // Headset speaker combo device not supported on this target
 #define DUALMIC_KEY "dualmic_enabled"
@@ -135,6 +134,7 @@ static uint32_t SND_DEVICE_BT=-1;
 static uint32_t SND_DEVICE_BT_EC_OFF=-1;
 static uint32_t SND_DEVICE_HEADSET=-1;
 static uint32_t SND_DEVICE_STEREO_HEADSET_AND_SPEAKER=-1;
+static uint32_t SND_DEVICE_HEADSET_AND_SPEAKER=-1;
 static uint32_t SND_DEVICE_IN_S_SADC_OUT_HANDSET=-1;
 static uint32_t SND_DEVICE_IN_S_SADC_OUT_SPEAKER_PHONE=-1;
 static uint32_t SND_DEVICE_TTY_HEADSET=-1;
@@ -218,6 +218,7 @@ mDirectOutrefCnt(0)
                 CHECK_FOR(HEADSET);
                 CHECK_FOR(NO_MIC_HEADSET);
                 CHECK_FOR(STEREO_HEADSET);
+                CHECK_FOR(HEADSET_AND_SPEAKER);
                 CHECK_FOR(STEREO_HEADSET_AND_SPEAKER);
                 CHECK_FOR(IN_S_SADC_OUT_HANDSET);
                 CHECK_FOR(IN_S_SADC_OUT_SPEAKER_PHONE);
@@ -361,7 +362,7 @@ AudioStreamOut* AudioHardware::openOutputStream(uint32_t devices, int *format, u
 #endif /*QCOM_VOIP_ENABLED*/
 	    if (flags & AUDIO_OUTPUT_FLAG_LPA) {
 			status_t err = BAD_VALUE;
-#if 0
+
             if (mOutput) {
                 if (status) {
                   *status = INVALID_OPERATION;
@@ -369,7 +370,7 @@ AudioStreamOut* AudioHardware::openOutputStream(uint32_t devices, int *format, u
                 ALOGE(" AudioHardware::openOutputStream Only one output stream allowed \n");
                 return 0;
             }
-#endif
+
             // create new output LPA stream
             AudioSessionOutLPA* out = new AudioSessionOutLPA(this, devices, *format, *channels,*sampleRate,0,&err);
             if(err != NO_ERROR) {
@@ -381,7 +382,7 @@ AudioStreamOut* AudioHardware::openOutputStream(uint32_t devices, int *format, u
         return mOutputLPA;
 
         } else {
-#if 0
+
             ALOGV(" AudioHardware::openOutputStream AudioStreamOutMSM72xx output stream \n");
             // only one output stream allowed
             if (mOutput) {
@@ -391,7 +392,7 @@ AudioStreamOut* AudioHardware::openOutputStream(uint32_t devices, int *format, u
                 ALOGE(" AudioHardware::openOutputStream Only one output stream allowed \n");
                 return 0;
             }
-#endif
+
             // create new output stream
             AudioStreamOutMSM72xx* out = new AudioStreamOutMSM72xx();
             lStatus = out->set(this, devices, format, channels, sampleRate);
@@ -1754,7 +1755,7 @@ status_t AudioHardware::doAudioRouteOrMute(uint32_t device)
 {
     int rc;
     int nEarmute=true;
-#if 0
+
     if (device == (uint32_t)SND_DEVICE_BT || device == (uint32_t)SND_DEVICE_CARKIT) {
         if (mBluetoothId) {
             device = mBluetoothId;
@@ -1762,7 +1763,7 @@ status_t AudioHardware::doAudioRouteOrMute(uint32_t device)
             device = SND_DEVICE_BT_EC_OFF;
         }
     }
-#endif
+
 #ifdef QCOM_FM_ENABLED
     if(IsFmon()){
         /* FM needs both Rx path and Tx path to be unmuted */
@@ -1891,18 +1892,6 @@ status_t AudioHardware::doRouting(AudioStreamInMSM72xx *input, int outputDevice)
                 ALOGI("Routing audio to TTY HCO Mode\n");
                 new_snd_device = SND_DEVICE_TTY_HCO;
             }
-#ifdef COMBO_DEVICE_SUPPORTED
-        } else if ((outputDevices & AudioSystem::DEVICE_OUT_WIRED_HEADSET) &&
-                   (outputDevices & AudioSystem::DEVICE_OUT_SPEAKER)) {
-            ALOGI("Routing audio to Wired Headset and Speaker\n");
-            new_snd_device = SND_DEVICE_STEREO_HEADSET_AND_SPEAKER;
-            new_post_proc_feature_mask = (ADRC_ENABLE | EQ_ENABLE | RX_IIR_ENABLE | MBADRC_ENABLE);
-        } else if ((outputDevices & AudioSystem::DEVICE_OUT_WIRED_HEADPHONE) &&
-                   (outputDevices & AudioSystem::DEVICE_OUT_SPEAKER)) {
-            ALOGI("Routing audio to No microphone Wired Headset and Speaker (%d,%x)\n", mMode, outputDevices);
-            new_snd_device = SND_DEVICE_STEREO_HEADSET_AND_SPEAKER;
-            new_post_proc_feature_mask = (ADRC_ENABLE | EQ_ENABLE | RX_IIR_ENABLE | MBADRC_ENABLE);
-#endif
 #ifdef QCOM_FM_ENABLED
         } else if ((outputDevices & AudioSystem::DEVICE_OUT_WIRED_HEADSET) &&
                    (outputDevices & AudioSystem::DEVICE_OUT_FM)) {
@@ -1934,6 +1923,22 @@ status_t AudioHardware::doRouting(AudioStreamInMSM72xx *input, int outputDevice)
         } else if (outputDevices & AudioSystem::DEVICE_OUT_BLUETOOTH_SCO_CARKIT) {
             ALOGI("Routing audio to Bluetooth PCM\n");
             new_snd_device = SND_DEVICE_CARKIT;
+#ifdef COMBO_DEVICE_SUPPORTED
+        } else if ((outputDevices & AudioSystem::DEVICE_OUT_WIRED_HEADSET) &&
+                   (outputDevices & AudioSystem::DEVICE_OUT_SPEAKER)) {
+            ALOGI("Routing audio to Wired Headset and Speaker\n");
+            new_snd_device = SND_DEVICE_STEREO_HEADSET_AND_SPEAKER;
+            new_post_proc_feature_mask = (ADRC_ENABLE | EQ_ENABLE | RX_IIR_ENABLE | MBADRC_ENABLE);
+        } else if (outputDevices & AudioSystem::DEVICE_OUT_WIRED_HEADPHONE) {
+            if (outputDevices & AudioSystem::DEVICE_OUT_SPEAKER) {
+                ALOGI("Routing audio to No microphone Wired Headset and Speaker (%d,%x)\n", mMode, outputDevices);
+                new_snd_device = SND_DEVICE_STEREO_HEADSET_AND_SPEAKER;
+                new_post_proc_feature_mask = (ADRC_ENABLE | EQ_ENABLE | RX_IIR_ENABLE | MBADRC_ENABLE);
+            } else {
+                ALOGI("Routing audio to No microphone Wired Headset (%d,%x)\n", mMode, outputDevices);
+                new_snd_device = SND_DEVICE_NO_MIC_HEADSET;
+            }
+#endif
         } else if (outputDevices & AudioSystem::DEVICE_OUT_WIRED_HEADSET) {
             ALOGI("Routing audio to Wired Headset\n");
             new_snd_device = SND_DEVICE_HEADSET;
@@ -3617,7 +3622,9 @@ status_t AudioHardware::AudioSessionOutLPA::openAudioSessionDevice( )
     } else {
         //initCheck = true;
         ALOGV("pcm_lp_dec: pcm_lp_dec Driver opened");
+#ifdef QCOM_TUNNEL_LPA_ENABLED
         lpa_playback_in_progress = true;
+#endif
     }
 
 	start();
@@ -4078,7 +4085,9 @@ void AudioHardware::AudioSessionOutLPA::reset()
     status_t status = NO_ERROR;
     bufferDeAlloc();
     ::close(afd);
+#ifdef QCOM_TUNNEL_LPA_ENABLED
     lpa_playback_in_progress = false;
+#endif
     ALOGD("AudioSessionOutLPA::reset() complete");
 }
 
