@@ -20,9 +20,6 @@ $(call inherit-product, $(SRC_TARGET_DIR)/product/full_base_telephony.mk)
 # Most specific first.
 $(call inherit-product, $(SRC_TARGET_DIR)/product/locales_full.mk)
 
-# Install/Uninstall google apps
-$(call inherit-product, vendor/google/gapps_armv6_tiny.mk)
-
 DEVICE_PACKAGE_OVERLAYS += device/htc/pico/overlay
 
 # Graphics 
@@ -282,7 +279,7 @@ PRODUCT_PROPERTY_OVERRIDES += \
     persist.sys.purgeable_assets=1 \
     ro.telephony.call_ring.delay=3000
 
-PRODUCT_AAPT_CONFIG := normal mdpi
+PRODUCT_AAPT_CONFIG := normal mdpi hdpi
 PRODUCT_AAPT_PREF_CONFIG := mdpi
 PRODUCT_BUILD_PROP_OVERRIDES += BUILD_UTC_DATE=0
 PRODUCT_TAGS += dalvik.gc.type-precise
